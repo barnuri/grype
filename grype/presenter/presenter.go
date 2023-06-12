@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/anchore/grype/grype/presenter/cyclonedx"
+	"github.com/anchore/grype/grype/presenter/explanation"
 	"github.com/anchore/grype/grype/presenter/json"
 	"github.com/anchore/grype/grype/presenter/models"
 	"github.com/anchore/grype/grype/presenter/sarif"
@@ -20,6 +21,9 @@ type Presenter interface {
 // GetPresenter retrieves a Presenter that matches a CLI option
 // TODO dependency cycle with presenter package to sub formats
 func GetPresenter(c Config, pb models.PresenterConfig) Presenter {
+	if len(pb.ToBeExplained) > 0 {
+		return explanation.NewPresenter(pb)
+	}
 	switch c.format {
 	case jsonFormat:
 		return json.NewPresenter(pb)

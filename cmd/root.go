@@ -192,6 +192,10 @@ func setRootFlags(flags *pflag.FlagSet) {
 		"platform", "", "",
 		"an optional platform specifier for container image sources (e.g. 'linux/arm64', 'linux/arm64/v8', 'arm64', 'linux')",
 	)
+
+	flags.StringArrayP(
+		"explain", "", nil, "list of vulnerabilities that grype should provide a detailed explanation of",
+	)
 }
 
 //nolint:revive
@@ -249,6 +253,10 @@ func bindRootConfigOptions(flags *pflag.FlagSet) error {
 	}
 
 	if err := viper.BindPFlag("name", flags.Lookup("name")); err != nil {
+		return err
+	}
+
+	if err := viper.BindPFlag("explain", flags.Lookup("explain")); err != nil {
 		return err
 	}
 
@@ -369,6 +377,7 @@ func startWorker(userInput string, failOnSeverity *vulnerability.Severity) <-cha
 			NormalizeByCVE: appConfig.ByCVE,
 			FailSeverity:   failOnSeverity,
 			Matchers:       getMatchers(),
+			ToBeExplained:  appConfig.Explain,
 		}
 
 		remainingMatches, ignoredMatches, err := vulnMatcher.FindMatches(packages, pkgContext)
@@ -388,6 +397,7 @@ func startWorker(userInput string, failOnSeverity *vulnerability.Severity) <-cha
 			SBOM:             sbom,
 			AppConfig:        appConfig,
 			DBStatus:         status,
+			ToBeExplained:    appConfig.Explain,
 		}
 
 		bus.Publish(partybus.Event{
