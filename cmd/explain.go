@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"os"
 	"strings"
 
@@ -26,7 +25,6 @@ var explainCmd = &cobra.Command{
 			isStdinPipeOrRedirect = false
 		}
 		if isStdinPipeOrRedirect {
-			// TODO: load from stdin, then explain requested CVEs
 			// TODO: eventually detect different types of input; for now assume grype json
 			var parseResult models.Document
 			decoder := json.NewDecoder(os.Stdin)
@@ -34,22 +32,8 @@ var explainCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("unable to parse piped input: %+v", err)
 			}
-			filters := make([]CveFilter, len(cveIDs))
-			for i, cveID := range cveIDs {
-				filters[i] = byeCVEId(cveID)
-			}
-			filter := orFilter(filters...)
-			matches := deduplicateMatchesByCVE(filterMatches(parseResult.Matches, filter))
-			for _, m := range matches {
-				// template.Must(template.New("explanation")).Execute(os.Stdout, m)
-				err := template.Must(template.New("explanation").Funcs(template.FuncMap{
-					"displayFound": displayFoundReason,
-				}).Parse(explanationTemplate)).Execute(os.Stdout, m)
-				if err != nil {
-					return err
-				}
-			}
-			return nil
+			explainer := models.NewVulnerabilityExplainer(parseResult, os.Stdout)
+			return explainer.ExplainByID(cveIDs)
 		} else {
 			// perform a scan, then explain requested CVEs
 			// TODO: implement
