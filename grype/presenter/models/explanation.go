@@ -74,6 +74,7 @@ func (e *vulnerabilityExplainer) ExplainByID(IDs []string) error {
 }
 
 func (e *vulnerabilityExplainer) ExplainBySeverity(severity string) error {
+	// TODO: implement
 	return nil
 }
 
