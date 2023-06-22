@@ -110,7 +110,7 @@ func NewExplainedVulnerability(vulnerabilityID string, doc Document) *ExplainedV
 		VulnerabilityID: vulnerabilityID,
 		Severity:        relevantMatches[0].Vulnerability.Severity,
 		MatchedPackages: packages,
-		URLs:            URLs,
+		URLs:            append([]string{relevantMatches[0].Vulnerability.DataSource}, URLs...),
 	}
 }
 
@@ -118,7 +118,8 @@ func ToMatchedPackage(m Match) MatchedPackage {
 	explanation := ""
 	if len(m.MatchDetails) > 0 {
 		switch m.MatchDetails[0].Type {
-		// TODO: other types of matches
+		case string(match.CPEMatch):
+			explanation = formatCPEExplanation(m)
 		case string(match.ExactIndirectMatch):
 			explanation = fmt.Sprintf("This CVE is reported against %s, the %s of this %s package.", m.Artifact.Upstreams[0].Name, nameForUpstream(string(m.Artifact.Type)), m.Artifact.Type)
 		}
@@ -128,6 +129,20 @@ func ToMatchedPackage(m Match) MatchedPackage {
 		Details:     m.MatchDetails,
 		Explanation: explanation,
 	}
+}
+
+func formatCPEExplanation(m Match) string {
+	found := m.MatchDetails[0].Found
+	if mapResult, ok := found.(map[string]interface{}); ok {
+		if cpes, ok := mapResult["cpes"]; ok {
+			if cpeSlice, ok := cpes.([]interface{}); ok {
+				if len(cpeSlice) > 0 {
+					return fmt.Sprintf("CPE match on `%s`", cpeSlice[0])
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func nameForUpstream(typ string) string {
