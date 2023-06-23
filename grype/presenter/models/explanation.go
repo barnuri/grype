@@ -18,6 +18,8 @@ var templ string
 type ExplainedVulnerability struct {
 	VulnerabilityID string
 	Severity        string
+	Namespace       string
+	Description     string
 	MatchedPackages []MatchedPackage
 	URLs            []string
 }
@@ -110,6 +112,8 @@ func NewExplainedVulnerability(vulnerabilityID string, doc Document) *ExplainedV
 	return &ExplainedVulnerability{
 		VulnerabilityID: vulnerabilityID,
 		Severity:        relevantMatches[0].Vulnerability.Severity,
+		Namespace:       relevantMatches[0].Vulnerability.Namespace,
+		Description:     relevantMatches[0].Vulnerability.Description,
 		MatchedPackages: packages,
 		URLs:            append([]string{relevantMatches[0].Vulnerability.DataSource}, URLs...),
 	}
