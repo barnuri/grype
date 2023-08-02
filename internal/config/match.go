@@ -12,6 +12,7 @@ type matchConfig struct {
 	Javascript matcherConfig `yaml:"javascript" json:"javascript" mapstructure:"javascript"` // settings for the javascript matcher
 	Python     matcherConfig `yaml:"python" json:"python" mapstructure:"python"`             // settings for the python matcher
 	Ruby       matcherConfig `yaml:"ruby" json:"ruby" mapstructure:"ruby"`                   // settings for the ruby matcher
+	Rust       matcherConfig `yaml:"rust" json:"rust" mapstructure:"rust"`                   // settings for the rust matcher
 	Stock      matcherConfig `yaml:"stock" json:"stock" mapstructure:"stock"`                // settings for the default/stock matcher
 }
 
@@ -20,11 +21,12 @@ type matcherConfig struct {
 }
 
 func (cfg matchConfig) loadDefaultValues(v *viper.Viper) {
-	v.SetDefault("match.java.using-cpes", true)
-	v.SetDefault("match.dotnet.using-cpes", true)
-	v.SetDefault("match.golang.using-cpes", true)
+	v.SetDefault("match.java.using-cpes", false)
+	v.SetDefault("match.dotnet.using-cpes", false)
+	v.SetDefault("match.golang.using-cpes", false)
 	v.SetDefault("match.javascript.using-cpes", false)
-	v.SetDefault("match.python.using-cpes", true)
-	v.SetDefault("match.ruby.using-cpes", true)
+	v.SetDefault("match.python.using-cpes", false)
+	v.SetDefault("match.ruby.using-cpes", false)
+	v.SetDefault("match.rust.using-cpes", false)
 	v.SetDefault("match.stock.using-cpes", true)
 }
