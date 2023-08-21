@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 
-	"github.com/anchore/grype/grype"
 	"github.com/anchore/grype/grype/db"
 	"github.com/anchore/grype/grype/match"
 	"github.com/anchore/grype/grype/matcher"
@@ -537,6 +536,45 @@ func addHaskellMatches(t *testing.T, theSource source.Source, catalog *syftPkg.C
 	})
 }
 
+func addRustMatches(t *testing.T, theSource source.Source, catalog *syftPkg.Collection, theStore *mockStore, theResult *match.Matches) {
+	packages := catalog.PackagesByPath("/hello-auditable")
+	if len(packages) < 1 {
+		t.Logf("Rust Packages: %+v", packages)
+		t.Fatalf("problem with upstream syft cataloger (cargo-auditable-binary-cataloger)")
+	}
+
+	for _, p := range packages {
+		thePkg := pkg.New(p)
+		theVuln := theStore.backend["github:language:rust"][strings.ToLower(thePkg.Name)][0]
+		vulnObj, err := vulnerability.NewVulnerability(theVuln)
+		require.NoError(t, err)
+
+		theResult.Add(match.Match{
+			Vulnerability: *vulnObj,
+			Package:       thePkg,
+			Details: []match.Detail{
+				{
+					Type:       match.ExactDirectMatch,
+					Confidence: 1.0,
+					SearchedBy: map[string]any{
+						"language":  "rust",
+						"namespace": "github:language:rust",
+						"package": map[string]string{
+							"name":    thePkg.Name,
+							"version": thePkg.Version,
+						},
+					},
+					Found: map[string]any{
+						"versionConstraint": vulnObj.Constraint.String(),
+						"vulnerabilityID":   vulnObj.ID,
+					},
+					Matcher: match.RustMatcher,
+				},
+			},
+		})
+	}
+}
+
 func TestMatchByImage(t *testing.T) {
 	observedMatchers := stringutil.NewStringSet()
 	definedMatchers := stringutil.NewStringSet()
@@ -595,6 +633,14 @@ func TestMatchByImage(t *testing.T) {
 				return expectedMatches
 			},
 		},
+		{
+			fixtureImage: "image-rust-auditable-match-coverage",
+			expectedFn: func(theSource source.Source, catalog *syftPkg.Collection, theStore *mockStore) match.Matches {
+				expectedMatches := match.NewMatches()
+				addRustMatches(t, theSource, catalog, theStore, &expectedMatches)
+				return expectedMatches
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -638,8 +684,7 @@ func TestMatchByImage(t *testing.T) {
 				ExclusionProvider: ep,
 			}
 
-			actualResults := grype.FindVulnerabilitiesForPackage(str, theDistro, matchers, pkg.FromCollection(collection, pkg.SynthesisConfig{}))
-
+			actualResults := matcher.FindMatches(str, theDistro, matchers, pkg.FromCollection(collection, pkg.SynthesisConfig{}))
 			for _, m := range actualResults.Sorted() {
 				for _, d := range m.Details {
 					observedMatchers.Add(string(d.Matcher))
